@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>weixin scan</title>
+    <script src="http://res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+</head>
+<body>
+    <input id="vinTxt" type="text">
+    <input id="scanBtn" type ="button" value="扫码" style="-webkit-appearance: none "/>
+</body>
+<script>
+    function fetchJsSdkConfig(appId, url, callback) {
+        var xmlHttpRequest = new XMLHttpRequest();
+        xmlHttpRequest.open('POST', '/getPermission', true);
+        xmlHttpRequest.setRequestHeader('content-type', 'application/json');
+        xmlHttpRequest.onreadystatechange = function() {
+            if(xmlHttpRequest.readyState === 4 && xmlHttpRequest.status === 200) {
+                var res = JSON.parse(xmlHttpRequest.responseText);
+                callback(res);
+            }
+        };
+        var signatureParams = {
+            appId: appId,
+            url: url
+        }
+        xmlHttpRequest.send(JSON.stringify(signatureParams)); 
+    }
+
+    function scanBtnClickHandle() {
+        var appId = 'wx1e649b2233501f6c';
+        var url = window.location.href;
+        var hashIndex = window.location.href.indexOf('#');
+        if(hashIndex > -1) url = url.slice(0, hashIndex);
+        fetchJsSdkConfig(appId, url, function(res) {
+            if(res.errcode === 0) {
+                wx.config({
+                    // debug: true, 
+                    appId: res.appId,
+                    timestamp: res.timestamp,
+                    nonceStr: res.nonceStr,
+                    signature: res.signature,
+                    jsApiList: ['scanQRCode']
+                });
+            } else {
+                console.log('获取签名错误：' + res.errmsg);
+            }
+        });
+        wx.ready(function() {
+          wx.scanQRCode({
+            needResult: 1, // 默认为0，扫描结果由微信处理，1则直接返回扫描结果，
+            scanType: ["qrCode","barCode"], // 可以指定扫二维码还是一维码，默认二者都有
+            success: function (res) {
+              document.getElementById('vinTxt').value = res.resultStr;
+            }
+          });
+        });
+        wx.error(function(res){
+          console.log('权限信息注入失败：' + res);
+        });
+    }
+
+    window.onload = function() {
+      document.getElementById('scanBtn').addEventListener('click', scanBtnClickHandle);
+    }
+</script>
+</html>
